@@ -1,0 +1,941 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Number Rush X</title>
+
+<style>
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+    font-family:Arial, sans-serif;
+}
+
+body{
+    min-height:100vh;
+    background:#0b1020;
+    color:white;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:15px;
+}
+
+.game{
+    width:100%;
+    max-width:550px;
+    background:#151d35;
+    border-radius:25px;
+    padding:22px;
+    text-align:center;
+}
+
+h1{
+    margin-bottom:8px;
+}
+
+.subtitle{
+    color:#b7c4db;
+    margin-bottom:20px;
+}
+
+input{
+    width:100%;
+    padding:15px;
+    margin-top:10px;
+    border:none;
+    border-radius:12px;
+    font-size:18px;
+    text-align:center;
+}
+
+button{
+    width:100%;
+    padding:15px;
+    margin-top:12px;
+    border:none;
+    border-radius:12px;
+    font-size:17px;
+    font-weight:bold;
+    cursor:pointer;
+    background:#2563eb;
+    color:white;
+}
+
+#startBtn{
+    background:#16a34a;
+}
+
+#gameArea{
+    display:none;
+}
+
+.stats{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:8px;
+    margin-bottom:15px;
+}
+
+.stat{
+    background:#0b1020;
+    padding:10px 5px;
+    border-radius:12px;
+    font-size:12px;
+}
+
+.stat b{
+    display:block;
+    margin-top:5px;
+    font-size:17px;
+}
+
+.box{
+    background:#243252;
+    padding:12px;
+    border-radius:12px;
+    margin-bottom:12px;
+}
+
+#challenge{
+    color:#c4d0e5;
+    min-height:25px;
+    margin-top:10px;
+}
+
+#question{
+    font-size:28px;
+    font-weight:bold;
+    margin:25px 0;
+    line-height:1.5;
+}
+
+#message{
+    min-height:35px;
+    margin-top:15px;
+    font-weight:bold;
+}
+
+.progress{
+    width:100%;
+    height:10px;
+    background:#070b16;
+    border-radius:10px;
+    overflow:hidden;
+    margin-top:15px;
+}
+
+#progressBar{
+    height:100%;
+    width:100%;
+    background:#22c55e;
+    transition:width 1s linear;
+}
+
+.rules{
+    text-align:left;
+    margin-top:20px;
+    padding:15px;
+    background:#10182d;
+    border-radius:15px;
+    line-height:1.8;
+    color:#c4d0e5;
+}
+
+@media(max-width:420px){
+    .stats{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+    #question{
+        font-size:23px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="game">
+
+    <h1>🔢 NUMBER RUSH X</h1>
+    <p class="subtitle">Think Fast • Solve Smart • Level Up</p>
+
+
+    <!-- START SCREEN -->
+
+    <div id="loginScreen">
+
+        <h2>Enter The Challenge</h2>
+
+        <input
+            type="text"
+            id="playerName"
+            placeholder="Enter your name"
+            maxlength="20"
+        >
+
+        <input
+            type="password"
+            id="playerPassword"
+            placeholder="Create your password"
+            maxlength="30"
+        >
+
+        <button id="startBtn" onclick="startGame()">
+            🚀 START GAME
+        </button>
+
+        <div class="rules">
+            <b>🎮 Rules</b><br>
+            🔐 Enter your own name and password.<br>
+            ⏱️ 10 seconds for every question.<br>
+            ❌ Wrong answer = same question.<br>
+            ⏰ Time over = solve same question.<br>
+            ✅ Correct = next question automatically.<br>
+            🔥 Every 5 correct answers = harder level.<br>
+            ♾️ Unlimited questions.
+        </div>
+
+    </div>
+
+
+    <!-- GAME SCREEN -->
+
+    <div id="gameArea">
+
+        <div class="box">
+            👤 Player: <b id="playerDisplay"></b>
+        </div>
+
+
+        <div class="stats">
+
+            <div class="stat">
+                🏆 Score
+                <b id="score">0</b>
+            </div>
+
+            <div class="stat">
+                🏆 Level
+                <b id="level">1</b>
+            </div>
+
+            <div class="stat">
+                ⏱️ Time
+                <b id="timer">10</b>
+            </div>
+
+            <div class="stat">
+                🔥 Streak
+                <b id="streak">0</b>
+            </div>
+
+        </div>
+
+
+        <div class="box" id="challenge">
+            Get Ready!
+        </div>
+
+
+        <div id="question">?</div>
+
+
+        <input
+            type="number"
+            id="answer"
+            placeholder="Enter answer"
+            inputmode="numeric"
+        >
+
+
+        <button onclick="checkAnswer()">
+            SUBMIT ANSWER
+        </button>
+
+
+        <div id="message"></div>
+
+
+        <div class="progress">
+            <div id="progressBar"></div>
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+/* =====================
+   GAME VARIABLES
+===================== */
+
+let playerName = "";
+
+let score = 0;
+let level = 1;
+let streak = 0;
+let correctCount = 0;
+
+let correctAnswer = 0;
+
+let timeLeft = 10;
+
+let timerInterval;
+
+let questionSolved = false;
+
+
+/* =====================
+   START GAME
+===================== */
+
+function startGame(){
+
+    const name =
+        document.getElementById("playerName").value.trim();
+
+    const password =
+        document.getElementById("playerPassword").value.trim();
+
+
+    if(name === ""){
+
+        alert("Please enter your name!");
+
+        return;
+
+    }
+
+
+    if(password === ""){
+
+        alert("Please create a password!");
+
+        return;
+
+    }
+
+
+    playerName = name;
+
+
+    document.getElementById(
+        "playerDisplay"
+    ).innerText = playerName;
+
+
+    document.getElementById(
+        "loginScreen"
+    ).style.display = "none";
+
+
+    document.getElementById(
+        "gameArea"
+    ).style.display = "block";
+
+
+    startMusic();
+
+    nextQuestion();
+
+}
+
+
+/* =====================
+   NEXT QUESTION
+===================== */
+
+function nextQuestion(){
+
+    clearInterval(timerInterval);
+
+    questionSolved = false;
+
+    document.getElementById("answer").value = "";
+
+    document.getElementById("answer").disabled = false;
+
+    document.getElementById("message").innerText = "";
+
+
+    generateQuestion();
+
+    startTimer();
+
+
+    setTimeout(function(){
+
+        document.getElementById("answer").focus();
+
+    },200);
+
+}
+
+
+/* =====================
+   RANDOM NUMBER
+===================== */
+
+function random(min,max){
+
+    return Math.floor(
+        Math.random() * (max-min+1)
+    ) + min;
+
+}
+
+
+/* =====================
+   GENERATE QUESTIONS
+===================== */
+
+function generateQuestion(){
+
+    let question = "";
+
+
+    /* LEVEL 1 */
+
+    if(level === 1){
+
+        let a = random(20,60);
+        let b = random(10,40);
+        let c = random(5,20);
+
+        correctAnswer = a + b - c;
+
+        question =
+            a + " + " +
+            b + " − " +
+            c + " = ?";
+
+
+        document.getElementById(
+            "challenge"
+        ).innerText =
+        "🟢 Level 1: Quick Calculation";
+
+    }
+
+
+    /* LEVEL 2 */
+
+    else if(level === 2){
+
+        let start = random(5,20);
+        let gap = random(3,10);
+
+        correctAnswer =
+            start + gap * 4;
+
+        question =
+            start + ", " +
+            (start + gap) + ", " +
+            (start + gap*2) + ", " +
+            (start + gap*3) + ", ?, " +
+            (start + gap*5);
+
+
+        document.getElementById(
+            "challenge"
+        ).innerText =
+        "🟡 Level 2: Missing Number";
+
+    }
+
+
+    /* LEVEL 3 */
+
+    else if(level === 3){
+
+        let a = random(10,30);
+        let b = random(5,15);
+        let c = random(10,40);
+
+        correctAnswer = a * b + c;
+
+        question =
+            "(" + a +
+            " × " + b +
+            ") + " + c +
+            " = ?";
+
+
+        document.getElementById(
+            "challenge"
+        ).innerText =
+        "🟠 Level 3: Multiply Challenge";
+
+    }
+
+
+    /* LEVEL 4 */
+
+    else if(level === 4){
+
+        let x = random(5,25);
+        let a = random(2,10);
+        let b = random(10,50);
+
+        let result = a*x + b;
+
+        correctAnswer = x;
+
+        question =
+            a + "x + " +
+            b + " = " +
+            result +
+            "<br>Find x";
+
+
+        document.getElementById(
+            "challenge"
+        ).innerText =
+        "🔴 Level 4: Algebra Challenge";
+
+    }
+
+
+    /* LEVEL 5 AND ABOVE */
+
+    else{
+
+        let type = random(1,5);
+
+
+        if(type === 1){
+
+            let a = random(20,60);
+            let b = random(5,20);
+            let c = random(2,12);
+
+            correctAnswer =
+                (a * b) - (c * c);
+
+            question =
+                "(" + a +
+                " × " + b +
+                ") − " +
+                c + "² = ?";
+
+        }
+
+
+        else if(type === 2){
+
+            let x = random(5,40);
+            let a = random(3,15);
+            let b = random(10,80);
+
+            correctAnswer = x;
+
+            let result = a*x + b;
+
+            question =
+                a + "x + " +
+                b + " = " +
+                result +
+                "<br>Find x";
+
+        }
+
+
+        else if(type === 3){
+
+            let a = random(10,40);
+            let b = random(5,20);
+            let c = random(3,15);
+
+            correctAnswer =
+                (a + b) * c - b;
+
+            question =
+                "((" + a +
+                " + " + b +
+                ") × " + c +
+                ") − " + b +
+                " = ?";
+
+        }
+
+
+        else if(type === 4){
+
+            let start = random(2,8);
+            let multiply = random(2,4);
+
+            let n1 = start;
+            let n2 = n1 * multiply;
+            let n3 = n2 * multiply;
+            let n4 = n3 * multiply;
+
+            correctAnswer =
+                n4 * multiply;
+
+            question =
+                n1 + ", " +
+                n2 + ", " +
+                n3 + ", " +
+                n4 + ", ?";
+
+        }
+
+
+        else{
+
+            let a = random(20,70);
+            let b = random(5,25);
+            let c = random(2,12);
+
+            correctAnswer =
+                ((a + b) * c) -
+                (a - b);
+
+            question =
+                "((" + a +
+                " + " + b +
+                ") × " + c +
+                ") − (" + a +
+                " − " + b +
+                ") = ?";
+
+        }
+
+
+        document.getElementById(
+            "challenge"
+        ).innerText =
+        "👑 BOSS LEVEL " + level;
+
+    }
+
+
+    document.getElementById(
+        "question"
+    ).innerHTML = question;
+
+}
+
+
+/* =====================
+   CHECK ANSWER
+===================== */
+
+function checkAnswer(){
+
+    if(questionSolved) return;
+
+
+    const input =
+        document.getElementById("answer");
+
+
+    if(input.value === ""){
+
+        document.getElementById(
+            "message"
+        ).innerText =
+        "⚠️ Enter your answer!";
+
+        return;
+
+    }
+
+
+    const userAnswer =
+        Number(input.value);
+
+
+    /* CORRECT */
+
+    if(userAnswer === correctAnswer){
+
+        questionSolved = true;
+
+        clearInterval(timerInterval);
+
+        streak++;
+
+        correctCount++;
+
+
+        let points =
+            10 + (level * 5);
+
+        score += points;
+
+
+        if(correctCount % 5 === 0){
+
+            level++;
+
+        }
+
+
+        updateStats();
+
+
+        document.getElementById(
+            "message"
+        ).innerText =
+        "🎉 Correct! +" +
+        points +
+        " points";
+
+
+        input.disabled = true;
+
+
+        /* AUTO NEXT QUESTION */
+
+        setTimeout(function(){
+
+            input.disabled = false;
+
+            nextQuestion();
+
+        },1000);
+
+    }
+
+
+    /* WRONG */
+
+    else{
+
+        streak = 0;
+
+        updateStats();
+
+
+        document.getElementById(
+            "message"
+        ).innerText =
+        "❌ Wrong! Try again. Same question remains.";
+
+
+        input.value = "";
+
+        input.focus();
+
+    }
+
+}
+
+
+/* =====================
+   TIMER
+===================== */
+
+function startTimer(){
+
+    timeLeft = 10;
+
+    updateTimer();
+
+
+    timerInterval =
+    setInterval(function(){
+
+        timeLeft--;
+
+        updateTimer();
+
+
+        if(timeLeft <= 0){
+
+            clearInterval(timerInterval);
+
+
+            document.getElementById(
+                "message"
+            ).innerText =
+            "⏰ Time Over! Solve this same question to continue.";
+
+        }
+
+    },1000);
+
+}
+
+
+function updateTimer(){
+
+    document.getElementById(
+        "timer"
+    ).innerText = timeLeft;
+
+
+    let percent =
+        (timeLeft / 10) * 100;
+
+
+    document.getElementById(
+        "progressBar"
+    ).style.width =
+        percent + "%";
+
+}
+
+
+/* =====================
+   UPDATE STATS
+===================== */
+
+function updateStats(){
+
+    document.getElementById(
+        "score"
+    ).innerText = score;
+
+
+    document.getElementById(
+        "level"
+    ).innerText = level;
+
+
+    document.getElementById(
+        "streak"
+    ).innerText = streak;
+
+}
+
+
+/* =====================
+   ENTER KEY
+===================== */
+
+document.addEventListener(
+    "keydown",
+    function(event){
+
+        if(event.key === "Enter"){
+
+            if(
+                document.getElementById(
+                    "gameArea"
+                ).style.display === "block"
+            ){
+
+                checkAnswer();
+
+            }
+
+        }
+
+    }
+);
+
+
+/* =====================
+   CONTINUOUS SOUND
+===================== */
+
+let audioContext;
+let musicInterval;
+
+
+function startMusic(){
+
+    try{
+
+        audioContext =
+            new (
+                window.AudioContext ||
+                window.webkitAudioContext
+            )();
+
+
+        const notes = [
+            261.63,
+            329.63,
+            392,
+            329.63
+        ];
+
+
+        let index = 0;
+
+
+        musicInterval =
+        setInterval(function(){
+
+            playTone(
+                notes[index]
+            );
+
+
+            index =
+                (index + 1) %
+                notes.length;
+
+        },500);
+
+    }
+
+    catch(error){
+
+        console.log(
+            "Sound not supported"
+        );
+
+    }
+
+}
+
+
+function playTone(frequency){
+
+    if(!audioContext) return;
+
+
+    const oscillator =
+        audioContext.createOscillator();
+
+
+    const gain =
+        audioContext.createGain();
+
+
+    oscillator.connect(gain);
+
+    gain.connect(
+        audioContext.destination
+    );
+
+
+    oscillator.frequency.value =
+        frequency;
+
+
+    oscillator.type =
+        "sine";
+
+
+    gain.gain.setValueAtTime(
+        0.03,
+        audioContext.currentTime
+    );
+
+
+    oscillator.start();
+
+
+    oscillator.stop(
+        audioContext.currentTime + 0.2
+    );
+
+}
+
+</script>
+
+</body>
+</html>
